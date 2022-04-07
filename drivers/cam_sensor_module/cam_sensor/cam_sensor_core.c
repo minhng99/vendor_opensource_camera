@@ -12,6 +12,7 @@
 #include "cam_common_util.h"
 #include "cam_packet_util.h"
 
+extern void cam_power_device_set_power(struct cam_sensor_ctrl_t *s_ctrl, int on);
 
 static void cam_sensor_update_req_mgr(
 	struct cam_sensor_ctrl_t *s_ctrl,
@@ -678,6 +679,7 @@ void cam_sensor_shutdown(struct cam_sensor_ctrl_t *s_ctrl)
 	s_ctrl->sensor_state = CAM_SENSOR_INIT;
 }
 
+extern int register_hardware_info(const char *name, const char *model);
 int cam_sensor_match_id(struct cam_sensor_ctrl_t *s_ctrl)
 {
 	int rc = 0;
@@ -707,6 +709,8 @@ int cam_sensor_match_id(struct cam_sensor_ctrl_t *s_ctrl)
 				chipid, slave_info->sensor_id);
 		return -ENODEV;
 	}
+        if(0x487b == slave_info->sensor_id)
+            register_hardware_info("camera","lce_s5k4h7rgb");
 	return rc;
 }
 
@@ -1213,6 +1217,11 @@ int cam_sensor_power_up(struct cam_sensor_ctrl_t *s_ctrl)
 	if (rc < 0)
 		CAM_ERR(CAM_SENSOR, "cci_init failed: rc: %d", rc);
 
+	CAM_INFO(CAM_SENSOR,"cam_sensor id:0x%x,  sensor_slave_addr:0x%x ",
+		s_ctrl->sensordata->slave_info.sensor_slave_addr, s_ctrl->sensordata->slave_info.sensor_id);
+
+	cam_power_device_set_power(s_ctrl, 1);
+
 	return rc;
 }
 
@@ -1250,6 +1259,7 @@ int cam_sensor_power_down(struct cam_sensor_ctrl_t *s_ctrl)
 		}
 	}
 
+	cam_power_device_set_power(s_ctrl, 0);
 	camera_io_release(&(s_ctrl->io_master_info));
 
 	return rc;
